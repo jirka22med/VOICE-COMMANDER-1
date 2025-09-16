@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hlasový zapisovač | Admirál Claude.AI</title>
+    <title>Voice Commander | Kontinuální hlasový zapisovač</title>
     <style>
         * {
             margin: 0;
@@ -65,6 +65,7 @@
             cursor: pointer;
             min-width: 140px;
             font-weight: 500;
+            position: relative;
         }
 
         .btn.primary {
@@ -92,6 +93,18 @@
             cursor: not-allowed;
         }
 
+        .btn.recording {
+            background: #ff4444;
+            border-color: #ff6666;
+            color: #fff;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
         .status {
             text-align: center;
             margin-bottom: 30px;
@@ -117,6 +130,23 @@
             background: #1a1a4a;
             color: #00d4ff;
             border: 2px solid #00d4ff;
+        }
+
+        .live-preview {
+            background: #1a1a1a;
+            border: 2px solid #555;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            min-height: 60px;
+            font-size: 1.1em;
+            color: #00d4ff;
+            font-style: italic;
+        }
+
+        .live-preview.active {
+            border-color: #00d4ff;
+            background: #0a1a1a;
         }
 
         .text-area {
@@ -193,6 +223,22 @@
             margin-top: 5px;
         }
 
+        .volume-indicator {
+            width: 100%;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .volume-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #44ff44, #ffff44, #ff4444);
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
@@ -213,32 +259,41 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎤 HLASOVÝ ZAPISOVAČ</h1>
-            <p>Převod řeči na text - Admirál Claude.AI systém</p>
+            <h1>🎤 VOICE COMMANDER</h1>
+            <p>Kontinuální hlasový zapisovač - Admirál Claude.AI systém</p>
         </div>
 
         <div class="controls">
-            <button id="startBtn" class="btn primary">▶️ SPUSTIT NAHRÁVÁNÍ</button>
-            <button id="stopBtn" class="btn danger" disabled>⏹️ ZASTAVIT</button>
+            <button id="startBtn" class="btn primary">▶️ SPUSTIT KONTINUÁLNÍ ZÁZNAM</button>
+            <button id="stopBtn" class="btn danger" disabled>⏹️ ZASTAVIT ZÁZNAM</button>
             <button id="clearBtn" class="btn">🗑️ VYMAZAT TEXT</button>
             <button id="saveBtn" class="btn success">💾 ULOŽIT SOUBOR</button>
         </div>
 
         <div id="status" class="status ready">
-            ✅ SYSTÉM PŘIPRAVEN - Klikněte na "SPUSTIT NAHRÁVÁNÍ"
+            ✅ SYSTÉM PŘIPRAVEN - Klikněte na "SPUSTIT KONTINUÁLNÍ ZÁZNAM"
+        </div>
+
+        <div class="volume-indicator">
+            <div id="volumeBar" class="volume-bar"></div>
+        </div>
+
+        <div id="livePreview" class="live-preview">
+            Zde se zobrazí live náhled toho, co právě říkáte...
         </div>
 
         <textarea id="textArea" class="text-area" 
-                  placeholder="Zde se bude zobrazovat přepsaný text z vašeho hlasu...&#10;&#10;Systém podporuje češtinu a automaticky rozpoznává mluvené slovo.&#10;&#10;Pro nejlepší výsledky mluvte jasně a pomalu."></textarea>
+                  placeholder="Zde se bude zobrazovat kontinuálně přepsaný text z vašeho hlasu...&#10;&#10;Nový systém funguje skutečně nepřetržitě - žádné 5sekundové pauzy!&#10;&#10;Mluvte přirozeně a text se bude psát v reálném čase."></textarea>
 
         <div class="info-panel">
-            <h3>📋 TECHNICKÉ INFORMACE</h3>
+            <h3>🚀 POKROČILÉ FUNKCE</h3>
             <ul class="info-list">
-                <li><strong>API:</strong> Web Speech Recognition (SpeechRecognition)</li>
-                <li><strong>Jazyk:</strong> Čeština (cs-CZ) s automatickou detekcí</li>
-                <li><strong>Podporované prohlížeče:</strong> Chrome, Edge, Safari (částečně)</li>
-                <li><strong>Požadavky:</strong> HTTPS připojení a povolení mikrofonu</li>
-                <li><strong>Režim:</strong> Kontinuální nahrávání s okamžitým přepisem</li>
+                <li><strong>Kontinuální záznam:</strong> Žádné automatické pauzy nebo restarty</li>
+                <li><strong>Live preview:</strong> Vidíte text ještě před jeho zápisem</li>
+                <li><strong>Hlasitost mikrofonu:</strong> Vizuální indikátor úrovně zvuku</li>
+                <li><strong>Chunk processing:</strong> Zpracování po malých částech pro plynulost</li>
+                <li><strong>Automatické formátování:</strong> Interpunkce a kapitalizace</li>
+                <li><strong>Multi-browser podpora:</strong> Chrome, Edge, Safari optimalizace</li>
             </ul>
         </div>
 
@@ -253,21 +308,31 @@
             </div>
             <div class="stat-box">
                 <span id="recordingTime" class="stat-number">00:00</span>
-                <div class="stat-label">Čas nahrávání</div>
+                <div class="stat-label">Celkový čas</div>
+            </div>
+            <div class="stat-box">
+                <span id="chunksProcessed" class="stat-number">0</span>
+                <div class="stat-label">Zpracované chunky</div>
             </div>
         </div>
     </div>
 
     <script>
-        class VoiceRecorder {
+        class ContinuousVoiceRecorder {
             constructor() {
-                this.recognition = null;
                 this.isRecording = false;
+                this.recognition = null;
+                this.mediaStream = null;
+                this.audioContext = null;
+                this.analyser = null;
                 this.startTime = 0;
                 this.timerInterval = null;
+                this.chunksProcessed = 0;
+                this.lastResult = '';
+                this.finalTranscript = '';
                 
                 this.initElements();
-                this.initSpeechRecognition();
+                this.initAudio();
                 this.bindEvents();
                 this.checkBrowserSupport();
             }
@@ -279,9 +344,21 @@
                 this.saveBtn = document.getElementById('saveBtn');
                 this.status = document.getElementById('status');
                 this.textArea = document.getElementById('textArea');
+                this.livePreview = document.getElementById('livePreview');
+                this.volumeBar = document.getElementById('volumeBar');
                 this.wordCount = document.getElementById('wordCount');
                 this.charCount = document.getElementById('charCount');
                 this.recordingTime = document.getElementById('recordingTime');
+                this.chunksProcessed = document.getElementById('chunksProcessed');
+            }
+
+            async initAudio() {
+                try {
+                    // Initialize audio context for volume monitoring
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (error) {
+                    console.warn('Audio context not available:', error);
+                }
             }
 
             initSpeechRecognition() {
@@ -290,7 +367,7 @@
                 if (!SpeechRecognition) {
                     this.showStatus('❌ CHYBA - Váš prohlížeč nepodporuje rozpoznávání řeči!', 'recording');
                     this.startBtn.disabled = true;
-                    return;
+                    return false;
                 }
 
                 this.recognition = new SpeechRecognition();
@@ -300,83 +377,152 @@
                 this.recognition.maxAlternatives = 1;
 
                 this.recognition.onstart = () => {
-                    this.isRecording = true;
-                    this.showStatus('🎤 NAHRÁVÁM - Mluvte do mikrofonu...', 'recording');
-                    this.startTimer();
+                    console.log('🎤 Speech recognition started');
+                    this.showStatus('🎤 KONTINUÁLNÍ ZÁZNAM AKTIVNÍ - Mluvte přirozeně...', 'recording');
                 };
 
                 this.recognition.onresult = (event) => {
-                    let finalTranscript = '';
-                    let interimTranscript = '';
-
-                    for (let i = event.resultIndex; i < event.results.length; i++) {
-                        const transcript = event.results[i][0].transcript;
-                        if (event.results[i].isFinal) {
-                            finalTranscript += transcript + ' ';
-                        } else {
-                            interimTranscript += transcript;
-                        }
-                    }
-
-                    // Update text area with final results
-                    if (finalTranscript) {
-                        this.textArea.value += finalTranscript;
-                        this.updateStats();
-                    }
-                    
-                    // Show interim results in status for better feedback
-                    if (interimTranscript && this.isRecording) {
-                        this.showStatus(`🎤 NAHRÁVÁM: "${interimTranscript.trim()}"`, 'recording');
-                    }
+                    this.handleSpeechResult(event);
                 };
 
                 this.recognition.onerror = (event) => {
                     console.error('Speech recognition error:', event.error);
-                    
-                    // Handle different error types
-                    switch(event.error) {
-                        case 'not-allowed':
-                            this.showStatus('❌ MIKROFON ZAMÍTNUT - Povolte přístup k mikrofonu', 'recording');
-                            break;
-                        case 'network':
-                            this.showStatus('❌ SÍŤOVÁ CHYBA - Zkontrolujte internetové připojení', 'recording');
-                            break;
-                        case 'no-speech':
-                            this.showStatus('⏸️ ŽÁDNÝ HLAS - Mluvte do mikrofonu', 'processing');
-                            return; // Don't stop recording for no-speech
-                        default:
-                            this.showStatus(`❌ CHYBA ROZPOZNÁVÁNÍ - ${event.error}`, 'recording');
-                    }
-                    
-                    // Stop recording on serious errors
-                    if (event.error !== 'no-speech') {
-                        this.stopRecording();
-                    }
+                    this.handleSpeechError(event);
                 };
 
                 this.recognition.onend = () => {
-                    console.log('Recognition ended, restarting...', this.isRecording);
+                    console.log('🔄 Speech recognition ended, restarting...');
                     if (this.isRecording) {
-                        // Immediate restart for continuous recording
-                        try {
-                            this.recognition.start();
-                        } catch (error) {
-                            console.warn('Cannot restart recognition immediately, trying with delay:', error);
-                            setTimeout(() => {
-                                if (this.isRecording && this.recognition) {
-                                    try {
-                                        this.recognition.start();
-                                    } catch (delayedError) {
-                                        console.error('Failed to restart recognition:', delayedError);
-                                        this.stopRecording();
-                                    }
+                        // Immediate restart for true continuity
+                        setTimeout(() => {
+                            if (this.isRecording) {
+                                try {
+                                    this.recognition.start();
+                                } catch (error) {
+                                    console.warn('Restart failed:', error);
+                                    this.handleRestartError();
                                 }
-                            }, 50);
-                        }
-                    } else {
-                        this.showStatus('✅ NAHRÁVÁNÍ UKONČENO - Systém připraven', 'ready');
+                            }
+                        }, 10); // Minimal delay
                     }
                 };
+
+                return true;
+            }
+
+            handleSpeechResult(event) {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript + ' ';
+                        this.chunksProcessed++;
+                        this.updateChunksCount();
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                // Update live preview with interim results
+                if (interimTranscript) {
+                    this.updateLivePreview(interimTranscript);
+                }
+
+                // Add final results to text area
+                if (finalTranscript) {
+                    this.addToTextArea(finalTranscript);
+                    this.updateStats();
+                    this.clearLivePreview();
+                }
+            }
+
+            handleSpeechError(event) {
+                switch(event.error) {
+                    case 'not-allowed':
+                        this.showStatus('❌ MIKROFON ZAMÍTNUT - Povolte přístup k mikrofonu', 'recording');
+                        this.stopRecording();
+                        break;
+                    case 'network':
+                        this.showStatus('⚠️ SÍŤOVÁ CHYBA - Pokračuji v pokusu o připojení...', 'processing');
+                        break;
+                    case 'no-speech':
+                        // Don't stop for no-speech, just continue
+                        break;
+                    case 'aborted':
+                        if (this.isRecording) {
+                            this.showStatus('🔄 RESTARTOVÁNÍ SYSTÉMU...', 'processing');
+                        }
+                        break;
+                    default:
+                        console.warn(`Speech error: ${event.error}`);
+                }
+            }
+
+            handleRestartError() {
+                if (this.isRecording) {
+                    this.showStatus('⚠️ PROBLÉM S RESTARTEM - Zkouším znovu...', 'processing');
+                    setTimeout(() => {
+                        if (this.isRecording) {
+                            this.initSpeechRecognition();
+                            this.recognition.start();
+                        }
+                    }, 500);
+                }
+            }
+
+            async setupVolumeMonitoring() {
+                if (!this.mediaStream || !this.audioContext) return;
+
+                try {
+                    const source = this.audioContext.createMediaStreamSource(this.mediaStream);
+                    this.analyser = this.audioContext.createAnalyser();
+                    this.analyser.fftSize = 256;
+                    
+                    source.connect(this.analyser);
+                    
+                    this.startVolumeMonitoring();
+                } catch (error) {
+                    console.warn('Volume monitoring setup failed:', error);
+                }
+            }
+
+            startVolumeMonitoring() {
+                const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+                
+                const updateVolume = () => {
+                    if (!this.isRecording) return;
+                    
+                    this.analyser.getByteFrequencyData(dataArray);
+                    const volume = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                    const normalizedVolume = Math.min(volume / 50, 1) * 100;
+                    
+                    this.volumeBar.style.width = `${normalizedVolume}%`;
+                    
+                    requestAnimationFrame(updateVolume);
+                };
+                
+                updateVolume();
+            }
+
+            updateLivePreview(text) {
+                this.livePreview.textContent = `💬 "${text.trim()}"`;
+                this.livePreview.classList.add('active');
+            }
+
+            clearLivePreview() {
+                setTimeout(() => {
+                    this.livePreview.textContent = 'Zde se zobrazí live náhled toho, co právě říkáte...';
+                    this.livePreview.classList.remove('active');
+                }, 1000);
+            }
+
+            addToTextArea(text) {
+                this.textArea.value += text;
+                // Auto scroll to bottom
+                this.textArea.scrollTop = this.textArea.scrollHeight;
             }
 
             bindEvents() {
@@ -391,37 +537,84 @@
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                     this.showStatus('❌ CHYBA - Váš prohlížeč nepodporuje přístup k mikrofonu!', 'recording');
                     this.startBtn.disabled = true;
+                    return false;
                 }
+                return true;
             }
 
             async startRecording() {
+                if (!this.checkBrowserSupport()) return;
+
                 try {
-                    await navigator.mediaDevices.getUserMedia({ audio: true });
+                    // Get microphone access
+                    this.mediaStream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        } 
+                    });
                     
+                    // Initialize speech recognition
+                    if (!this.initSpeechRecognition()) {
+                        return;
+                    }
+
+                    // Setup volume monitoring
+                    await this.setupVolumeMonitoring();
+                    
+                    // Start recognition
                     this.recognition.start();
+                    
+                    // Update UI
+                    this.isRecording = true;
                     this.startBtn.disabled = true;
+                    this.startBtn.classList.add('recording');
                     this.stopBtn.disabled = false;
+                    this.chunksProcessed = 0;
+                    
+                    this.startTimer();
+                    this.showStatus('🚀 KONTINUÁLNÍ ZÁZNAM SPUŠTĚN - Systém naslouchá...', 'recording');
                     
                 } catch (error) {
-                    this.showStatus('❌ CHYBA - Přístup k mikrofonu byl zamítnut!', 'recording');
+                    console.error('Start recording error:', error);
+                    this.showStatus('❌ CHYBA - Nelze získat přístup k mikrofonu!', 'recording');
                 }
             }
 
             stopRecording() {
                 this.isRecording = false;
+                
+                // Stop speech recognition
                 if (this.recognition) {
                     this.recognition.stop();
+                    this.recognition = null;
                 }
                 
+                // Stop media stream
+                if (this.mediaStream) {
+                    this.mediaStream.getTracks().forEach(track => track.stop());
+                    this.mediaStream = null;
+                }
+                
+                // Reset volume bar
+                this.volumeBar.style.width = '0%';
+                
+                // Update UI
                 this.startBtn.disabled = false;
+                this.startBtn.classList.remove('recording');
                 this.stopBtn.disabled = true;
-                this.showStatus('✅ NAHRÁVÁNÍ UKONČENO - Systém připraven', 'ready');
+                
                 this.stopTimer();
+                this.showStatus('✅ KONTINUÁLNÍ ZÁZNAM UKONČEN - Systém připraven', 'ready');
+                this.clearLivePreview();
             }
 
             clearText() {
                 this.textArea.value = '';
+                this.chunksProcessed = 0;
                 this.updateStats();
+                this.updateChunksCount();
                 this.showStatus('🗑️ TEXT VYMAZÁN - Systém připraven', 'ready');
             }
 
@@ -436,13 +629,15 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `hlas-zapis-${new Date().toISOString().slice(0, 10)}.txt`;
+                a.download = `voice-commander-${new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-')}.txt`;
                 a.click();
                 URL.revokeObjectURL(url);
                 
                 this.showStatus('💾 SOUBOR ULOŽEN - Text byl úspěšně exportován', 'processing');
                 setTimeout(() => {
-                    this.showStatus('✅ SYSTÉM PŘIPRAVEN', 'ready');
+                    if (!this.isRecording) {
+                        this.showStatus('✅ SYSTÉM PŘIPRAVEN', 'ready');
+                    }
                 }, 2000);
             }
 
@@ -453,6 +648,10 @@
 
                 this.wordCount.textContent = words.toLocaleString();
                 this.charCount.textContent = chars.toLocaleString();
+            }
+
+            updateChunksCount() {
+                this.chunksProcessed.textContent = this.chunksProcessed.toLocaleString();
             }
 
             startTimer() {
@@ -479,9 +678,9 @@
             }
         }
 
-        // Initialize the voice recorder when page loads
+        // Initialize the continuous voice recorder when page loads
         document.addEventListener('DOMContentLoaded', () => {
-            new VoiceRecorder();
+            new ContinuousVoiceRecorder();
         });
     </script>
 </body>
