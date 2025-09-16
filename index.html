@@ -289,11 +289,11 @@
             <h3>🚀 POKROČILÉ FUNKCE</h3>
             <ul class="info-list">
                 <li><strong>Kontinuální záznam:</strong> Žádné automatické pauzy nebo restarty</li>
+                <li><strong>Auto-save každých 5 minut:</strong> Automatické ukládání dlouhých nahrávek</li>
                 <li><strong>Live preview:</strong> Vidíte text ještě před jeho zápisem</li>
                 <li><strong>Hlasitost mikrofonu:</strong> Vizuální indikátor úrovně zvuku</li>
                 <li><strong>Chunk processing:</strong> Zpracování po malých částech pro plynulost</li>
                 <li><strong>Automatické formátování:</strong> Interpunkce a kapitalizace</li>
-                <li><strong>Multi-browser podpora:</strong> Chrome, Edge, Safari optimalizace</li>
             </ul>
         </div>
 
@@ -327,6 +327,8 @@
                 this.analyser = null;
                 this.startTime = 0;
                 this.timerInterval = null;
+                this.autoSaveInterval = null;
+                this.autoSaveCounter = 0;
                 this.chunksCount = 0; // Counter for processed chunks
                 this.lastResult = '';
                 this.finalTranscript = '';
@@ -403,7 +405,7 @@
                                     this.handleRestartError();
                                 }
                             }
-                        }, 300000); // Minimal delay
+                        }, 10); // Minimal delay
                     }
                 };
 
@@ -520,7 +522,7 @@
                         this.livePreview.textContent = 'Zde se zobrazí live náhled toho, co právě říkáte...';
                         this.livePreview.classList.remove('active');
                     }
-                }, 300000); // Extended time to see the result
+                }, 3000); // Extended time to see the result
             }
 
             updateLivePreviewWithFinal(text) {
@@ -531,7 +533,7 @@
                 // Reset color after showing the result
                 setTimeout(() => {
                     this.livePreview.style.color = '#00d4ff';
-                }, 300000);
+                }, 2000);
             }
 
             addToTextArea(text) {
@@ -587,6 +589,7 @@
                     this.startBtn.classList.add('recording');
                     this.stopBtn.disabled = false;
                     this.chunksCount = 0;
+                    this.autoSaveCounter = 0;
                     
                     this.startTimer();
                     this.showStatus('🚀 KONTINUÁLNÍ ZÁZNAM SPUŠTĚN - Systém naslouchá...', 'recording');
@@ -678,12 +681,61 @@
                     this.recordingTime.textContent = 
                         `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 }, 1000);
+
+                // Start auto-save timer (every 5 minutes)
+                this.startAutoSave();
+            }
+
+            startAutoSave() {
+                this.autoSaveCounter = 0;
+                this.autoSaveInterval = setInterval(() => {
+                    if (this.isRecording && this.textArea.value.trim()) {
+                        this.autoSaveCounter++;
+                        this.performAutoSave();
+                        this.showAutoSaveNotification();
+                    }
+                }, 300000); // 300000ms = 5 minutes
+            }
+
+            performAutoSave() {
+                const text = this.textArea.value;
+                if (!text.trim()) return;
+
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+                const filename = `voice-commander-autosave-${this.autoSaveCounter}-${timestamp}.txt`;
+                
+                const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            showAutoSaveNotification() {
+                const originalStatus = this.status.textContent;
+                const originalClass = this.status.className;
+                
+                this.showStatus(`💾 AUTO-SAVE #${this.autoSaveCounter} - Soubor automaticky uložen (5 min)`, 'processing');
+                
+                // Return to original status after 3 seconds
+                setTimeout(() => {
+                    if (this.isRecording) {
+                        this.showStatus('🎤 KONTINUÁLNÍ ZÁZNAM AKTIVNÍ - Mluvte přirozeně...', 'recording');
+                    }
+                }, 3000);
             }
 
             stopTimer() {
                 if (this.timerInterval) {
                     clearInterval(this.timerInterval);
                     this.timerInterval = null;
+                }
+                
+                if (this.autoSaveInterval) {
+                    clearInterval(this.autoSaveInterval);
+                    this.autoSaveInterval = null;
                 }
             }
 
@@ -700,5 +752,3 @@
     </script>
 </body>
 </html>
-
-
