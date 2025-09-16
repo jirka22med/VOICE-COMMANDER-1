@@ -435,7 +435,7 @@
                 if (finalTranscript) {
                     this.addToTextArea(finalTranscript);
                     this.updateStats();
-                    this.clearLivePreview();
+                    this.updateLivePreviewWithFinal(finalTranscript); // Show confirmed text
                 }
             }
 
@@ -508,15 +508,30 @@
             }
 
             updateLivePreview(text) {
-                this.livePreview.textContent = `💬 "${text.trim()}"`;
+                this.livePreview.textContent = `💬 ŘÍKÁTE: "${text.trim()}"`;
                 this.livePreview.classList.add('active');
+                this.livePreview.style.color = '#00d4ff'; // Blue for interim text
             }
 
             clearLivePreview() {
+                // Don't clear immediately, keep showing the last result
                 setTimeout(() => {
-                    this.livePreview.textContent = 'Zde se zobrazí live náhled toho, co právě říkáte...';
-                    this.livePreview.classList.remove('active');
-                }, 1000);
+                    if (!this.isRecording) {
+                        this.livePreview.textContent = 'Zde se zobrazí live náhled toho, co právě říkáte...';
+                        this.livePreview.classList.remove('active');
+                    }
+                }, 3000); // Extended time to see the result
+            }
+
+            updateLivePreviewWithFinal(text) {
+                this.livePreview.textContent = `✅ ZAPSÁNO: "${text.trim()}"`;
+                this.livePreview.classList.add('active');
+                this.livePreview.style.color = '#44ff44'; // Green for confirmed text
+                
+                // Reset color after showing the result
+                setTimeout(() => {
+                    this.livePreview.style.color = '#00d4ff';
+                }, 2000);
             }
 
             addToTextArea(text) {
