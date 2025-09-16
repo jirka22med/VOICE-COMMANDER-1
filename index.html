@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hlasový zapisovač | Admirál Claude.AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #2a2a2a;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #404040;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #00d4ff;
+            font-size: 2.5em;
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #b0b0b0;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: #333;
+            color: #fff;
+            border: 2px solid #555;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            min-width: 140px;
+            font-weight: 500;
+        }
+
+        .btn.primary {
+            background: #00d4ff;
+            border-color: #00d4ff;
+            color: #000;
+        }
+
+        .btn.danger {
+            background: #ff4444;
+            border-color: #ff4444;
+            color: #fff;
+        }
+
+        .btn.success {
+            background: #44ff44;
+            border-color: #44ff44;
+            color: #000;
+        }
+
+        .btn:disabled {
+            background: #555;
+            border-color: #666;
+            color: #999;
+            cursor: not-allowed;
+        }
+
+        .status {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 500;
+        }
+
+        .status.ready {
+            background: #1a4a1a;
+            color: #44ff44;
+            border: 2px solid #44ff44;
+        }
+
+        .status.recording {
+            background: #4a1a1a;
+            color: #ff4444;
+            border: 2px solid #ff4444;
+        }
+
+        .status.processing {
+            background: #1a1a4a;
+            color: #00d4ff;
+            border: 2px solid #00d4ff;
+        }
+
+        .text-area {
+            width: 100%;
+            min-height: 400px;
+            background: #1a1a1a;
+            border: 2px solid #404040;
+            border-radius: 8px;
+            padding: 20px;
+            font-size: 1.1em;
+            line-height: 1.6;
+            color: #e0e0e0;
+            resize: vertical;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .text-area:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+
+        .info-panel {
+            margin-top: 30px;
+            background: #1a1a1a;
+            border: 2px solid #404040;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .info-panel h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .info-list {
+            list-style: none;
+        }
+
+        .info-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+            color: #b0b0b0;
+        }
+
+        .info-list li:last-child {
+            border-bottom: none;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            background: #333;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #555;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #00d4ff;
+            display: block;
+        }
+
+        .stat-label {
+            color: #b0b0b0;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎤 HLASOVÝ ZAPISOVAČ</h1>
+            <p>Převod řeči na text - Admirál Claude.AI systém</p>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn" class="btn primary">▶️ SPUSTIT NAHRÁVÁNÍ</button>
+            <button id="stopBtn" class="btn danger" disabled>⏹️ ZASTAVIT</button>
+            <button id="clearBtn" class="btn">🗑️ VYMAZAT TEXT</button>
+            <button id="saveBtn" class="btn success">💾 ULOŽIT SOUBOR</button>
+        </div>
+
+        <div id="status" class="status ready">
+            ✅ SYSTÉM PŘIPRAVEN - Klikněte na "SPUSTIT NAHRÁVÁNÍ"
+        </div>
+
+        <textarea id="textArea" class="text-area" 
+                  placeholder="Zde se bude zobrazovat přepsaný text z vašeho hlasu...&#10;&#10;Systém podporuje češtinu a automaticky rozpoznává mluvené slovo.&#10;&#10;Pro nejlepší výsledky mluvte jasně a pomalu."></textarea>
+
+        <div class="info-panel">
+            <h3>📋 TECHNICKÉ INFORMACE</h3>
+            <ul class="info-list">
+                <li><strong>API:</strong> Web Speech Recognition (SpeechRecognition)</li>
+                <li><strong>Jazyk:</strong> Čeština (cs-CZ) s automatickou detekcí</li>
+                <li><strong>Podporované prohlížeče:</strong> Chrome, Edge, Safari (částečně)</li>
+                <li><strong>Požadavky:</strong> HTTPS připojení a povolení mikrofonu</li>
+                <li><strong>Režim:</strong> Kontinuální nahrávání s okamžitým přepisem</li>
+            </ul>
+        </div>
+
+        <div class="stats">
+            <div class="stat-box">
+                <span id="wordCount" class="stat-number">0</span>
+                <div class="stat-label">Počet slov</div>
+            </div>
+            <div class="stat-box">
+                <span id="charCount" class="stat-number">0</span>
+                <div class="stat-label">Počet znaků</div>
+            </div>
+            <div class="stat-box">
+                <span id="recordingTime" class="stat-number">00:00</span>
+                <div class="stat-label">Čas nahrávání</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class VoiceRecorder {
+            constructor() {
+                this.recognition = null;
+                this.isRecording = false;
+                this.startTime = 0;
+                this.timerInterval = null;
+                
+                this.initElements();
+                this.initSpeechRecognition();
+                this.bindEvents();
+                this.checkBrowserSupport();
+            }
+
+            initElements() {
+                this.startBtn = document.getElementById('startBtn');
+                this.stopBtn = document.getElementById('stopBtn');
+                this.clearBtn = document.getElementById('clearBtn');
+                this.saveBtn = document.getElementById('saveBtn');
+                this.status = document.getElementById('status');
+                this.textArea = document.getElementById('textArea');
+                this.wordCount = document.getElementById('wordCount');
+                this.charCount = document.getElementById('charCount');
+                this.recordingTime = document.getElementById('recordingTime');
+            }
+
+            initSpeechRecognition() {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                
+                if (!SpeechRecognition) {
+                    this.showStatus('❌ CHYBA - Váš prohlížeč nepodporuje rozpoznávání řeči!', 'recording');
+                    this.startBtn.disabled = true;
+                    return;
+                }
+
+                this.recognition = new SpeechRecognition();
+                this.recognition.continuous = true;
+                this.recognition.interimResults = true;
+                this.recognition.lang = 'cs-CZ';
+
+                this.recognition.onstart = () => {
+                    this.isRecording = true;
+                    this.showStatus('🎤 NAHRÁVÁM - Mluvte do mikrofonu...', 'recording');
+                    this.startTimer();
+                };
+
+                this.recognition.onresult = (event) => {
+                    let finalTranscript = '';
+                    let interimTranscript = '';
+
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript + ' ';
+                        } else {
+                            interimTranscript += transcript;
+                        }
+                    }
+
+                    if (finalTranscript) {
+                        this.textArea.value += finalTranscript;
+                        this.updateStats();
+                    }
+                };
+
+                this.recognition.onerror = (event) => {
+                    console.error('Speech recognition error:', event.error);
+                    
+                    // Handle different error types
+                    switch(event.error) {
+                        case 'not-allowed':
+                            this.showStatus('❌ MIKROFON ZAMÍTNUT - Povolte přístup k mikrofonu', 'recording');
+                            break;
+                        case 'network':
+                            this.showStatus('❌ SÍŤOVÁ CHYBA - Zkontrolujte internetové připojení', 'recording');
+                            break;
+                        case 'no-speech':
+                            this.showStatus('⏸️ ŽÁDNÝ HLAS - Mluvte do mikrofonu', 'processing');
+                            return; // Don't stop recording for no-speech
+                        default:
+                            this.showStatus(`❌ CHYBA ROZPOZNÁVÁNÍ - ${event.error}`, 'recording');
+                    }
+                    
+                    // Stop recording on serious errors
+                    if (event.error !== 'no-speech') {
+                        this.stopRecording();
+                    }
+                };
+
+                this.recognition.onend = () => {
+                    if (this.isRecording) {
+                        // Restart only if we're still in recording mode and no error occurred
+                        setTimeout(() => {
+                            if (this.isRecording && this.recognition) {
+                                try {
+                                    this.recognition.start();
+                                } catch (error) {
+                                    console.warn('Cannot restart recognition:', error);
+                                    this.stopRecording();
+                                }
+                            }
+                        }, 100);
+                    } else {
+                        this.showStatus('✅ NAHRÁVÁNÍ UKONČENO - Systém připraven', 'ready');
+                    }
+                };
+            }
+
+            bindEvents() {
+                this.startBtn.addEventListener('click', () => this.startRecording());
+                this.stopBtn.addEventListener('click', () => this.stopRecording());
+                this.clearBtn.addEventListener('click', () => this.clearText());
+                this.saveBtn.addEventListener('click', () => this.saveText());
+                this.textArea.addEventListener('input', () => this.updateStats());
+            }
+
+            checkBrowserSupport() {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    this.showStatus('❌ CHYBA - Váš prohlížeč nepodporuje přístup k mikrofonu!', 'recording');
+                    this.startBtn.disabled = true;
+                }
+            }
+
+            async startRecording() {
+                try {
+                    await navigator.mediaDevices.getUserMedia({ audio: true });
+                    
+                    this.recognition.start();
+                    this.startBtn.disabled = true;
+                    this.stopBtn.disabled = false;
+                    
+                } catch (error) {
+                    this.showStatus('❌ CHYBA - Přístup k mikrofonu byl zamítnut!', 'recording');
+                }
+            }
+
+            stopRecording() {
+                this.isRecording = false;
+                if (this.recognition) {
+                    this.recognition.stop();
+                }
+                
+                this.startBtn.disabled = false;
+                this.stopBtn.disabled = true;
+                this.showStatus('✅ NAHRÁVÁNÍ UKONČENO - Systém připraven', 'ready');
+                this.stopTimer();
+            }
+
+            clearText() {
+                this.textArea.value = '';
+                this.updateStats();
+                this.showStatus('🗑️ TEXT VYMAZÁN - Systém připraven', 'ready');
+            }
+
+            saveText() {
+                const text = this.textArea.value;
+                if (!text.trim()) {
+                    alert('❌ Žádný text k uložení!');
+                    return;
+                }
+
+                const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `hlas-zapis-${new Date().toISOString().slice(0, 10)}.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                this.showStatus('💾 SOUBOR ULOŽEN - Text byl úspěšně exportován', 'processing');
+                setTimeout(() => {
+                    this.showStatus('✅ SYSTÉM PŘIPRAVEN', 'ready');
+                }, 2000);
+            }
+
+            updateStats() {
+                const text = this.textArea.value;
+                const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+                const chars = text.length;
+
+                this.wordCount.textContent = words.toLocaleString();
+                this.charCount.textContent = chars.toLocaleString();
+            }
+
+            startTimer() {
+                this.startTime = Date.now();
+                this.timerInterval = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+                    const minutes = Math.floor(elapsed / 60);
+                    const seconds = elapsed % 60;
+                    this.recordingTime.textContent = 
+                        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
+
+            stopTimer() {
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                    this.timerInterval = null;
+                }
+            }
+
+            showStatus(message, type) {
+                this.status.textContent = message;
+                this.status.className = `status ${type}`;
+            }
+        }
+
+        // Initialize the voice recorder when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new VoiceRecorder();
+        });
+    </script>
+</body>
+</html>
