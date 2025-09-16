@@ -403,7 +403,7 @@
                                     this.handleRestartError();
                                 }
                             }
-                        }, 10); // Minimal delay
+                        }, 300000); // Minimal delay
                     }
                 };
 
@@ -531,7 +531,7 @@
                 // Reset color after showing the result
                 setTimeout(() => {
                     this.livePreview.style.color = '#00d4ff';
-                }, 2000);
+                }, 300000);
             }
 
             addToTextArea(text) {
@@ -700,4 +700,5 @@
     </script>
 </body>
 </html>
+
 
