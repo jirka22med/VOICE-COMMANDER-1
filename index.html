@@ -327,7 +327,7 @@
                 this.analyser = null;
                 this.startTime = 0;
                 this.timerInterval = null;
-                this.chunksProcessed = 0;
+                this.chunksCount = 0; // Counter for processed chunks
                 this.lastResult = '';
                 this.finalTranscript = '';
                 
@@ -419,7 +419,7 @@
                     
                     if (event.results[i].isFinal) {
                         finalTranscript += transcript + ' ';
-                        this.chunksProcessed++;
+                        this.chunksCount++;
                         this.updateChunksCount();
                     } else {
                         interimTranscript += transcript;
@@ -586,7 +586,7 @@
                     this.startBtn.disabled = true;
                     this.startBtn.classList.add('recording');
                     this.stopBtn.disabled = false;
-                    this.chunksProcessed = 0;
+                    this.chunksCount = 0;
                     
                     this.startTimer();
                     this.showStatus('🚀 KONTINUÁLNÍ ZÁZNAM SPUŠTĚN - Systém naslouchá...', 'recording');
@@ -627,7 +627,7 @@
 
             clearText() {
                 this.textArea.value = '';
-                this.chunksProcessed = 0;
+                this.chunksCount = 0;
                 this.updateStats();
                 this.updateChunksCount();
                 this.showStatus('🗑️ TEXT VYMAZÁN - Systém připraven', 'ready');
@@ -666,7 +666,7 @@
             }
 
             updateChunksCount() {
-                this.chunksProcessed.textContent = this.chunksProcessed.toLocaleString();
+                this.chunksProcessed.textContent = this.chunksCount.toLocaleString();
             }
 
             startTimer() {
