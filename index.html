@@ -289,11 +289,11 @@
             <h3>🚀 POKROČILÉ FUNKCE</h3>
             <ul class="info-list">
                 <li><strong>Kontinuální záznam:</strong> Žádné automatické pauzy nebo restarty</li>
-                <li><strong>Auto-save každých 5 minut:</strong> Automatické ukládání dlouhých nahrávek</li>
+                <li><strong>Optimalizovaná přesnost:</strong> Vyšší kvalita zvuku a filtrace šumu</li>
                 <li><strong>Live preview:</strong> Vidíte text ještě před jeho zápisem</li>
                 <li><strong>Hlasitost mikrofonu:</strong> Vizuální indikátor úrovně zvuku</li>
                 <li><strong>Chunk processing:</strong> Zpracování po malých částech pro plynulost</li>
-                <li><strong>Automatické formátování:</strong> Interpunkce a kapitalizace</li>
+                <li><strong>Manuální ukládání:</strong> Úplná kontrola nad exportem souborů</li>
             </ul>
         </div>
 
@@ -376,7 +376,12 @@
                 this.recognition.continuous = true;
                 this.recognition.interimResults = true;
                 this.recognition.lang = 'cs-CZ';
-                this.recognition.maxAlternatives = 1;
+                this.recognition.maxAlternatives = 3; // More alternatives for better accuracy
+                
+                // Enhanced settings for better speech recognition
+                if ('webkitSpeechRecognition' in window) {
+                    this.recognition.serviceURI = 'wss://www.google.com/speech-api/v2/recognize';
+                }
 
                 this.recognition.onstart = () => {
                     console.log('🎤 Speech recognition started');
@@ -393,19 +398,24 @@
                 };
 
                 this.recognition.onend = () => {
-                    console.log('🔄 Speech recognition ended, restarting...');
+                    console.log('🔄 Speech recognition ended, immediate restart...');
                     if (this.isRecording) {
-                        // Immediate restart for true continuity
-                        setTimeout(() => {
-                            if (this.isRecording) {
-                                try {
-                                    this.recognition.start();
-                                } catch (error) {
-                                    console.warn('Restart failed:', error);
-                                    this.handleRestartError();
+                        // Immediate restart with minimal delay for continuous flow
+                        try {
+                            this.recognition.start();
+                        } catch (error) {
+                            console.warn('Immediate restart failed, trying with micro delay:', error);
+                            setTimeout(() => {
+                                if (this.isRecording && this.recognition) {
+                                    try {
+                                        this.recognition.start();
+                                    } catch (delayedError) {
+                                        console.error('Failed to restart recognition:', delayedError);
+                                        this.handleRestartError();
+                                    }
                                 }
-                            }
-                        }, 10); // Minimal delay
+                            }, 5); // Even shorter delay - 5ms
+                        }
                     }
                 };
 
@@ -563,12 +573,15 @@
                 if (!this.checkBrowserSupport()) return;
 
                 try {
-                    // Get microphone access
+                    // Get microphone access with optimal settings
                     this.mediaStream = await navigator.mediaDevices.getUserMedia({ 
                         audio: {
                             echoCancellation: true,
                             noiseSuppression: true,
-                            autoGainControl: true
+                            autoGainControl: true,
+                            sampleRate: 44100, // Higher sample rate for better quality
+                            channelCount: 1, // Mono for speech recognition
+                            latency: 0.01 // Low latency for real-time processing
                         } 
                     });
                     
@@ -681,50 +694,6 @@
                     this.recordingTime.textContent = 
                         `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 }, 1000);
-
-                // Start auto-save timer (every 5 minutes)
-                this.startAutoSave();
-            }
-
-            startAutoSave() {
-                this.autoSaveCounter = 0;
-                this.autoSaveInterval = setInterval(() => {
-                    if (this.isRecording && this.textArea.value.trim()) {
-                        this.autoSaveCounter++;
-                        this.performAutoSave();
-                        this.showAutoSaveNotification();
-                    }
-                }, 300000); // 300000ms = 5 minutes
-            }
-
-            performAutoSave() {
-                const text = this.textArea.value;
-                if (!text.trim()) return;
-
-                const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
-                const filename = `voice-commander-autosave-${this.autoSaveCounter}-${timestamp}.txt`;
-                
-                const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                a.click();
-                URL.revokeObjectURL(url);
-            }
-
-            showAutoSaveNotification() {
-                const originalStatus = this.status.textContent;
-                const originalClass = this.status.className;
-                
-                this.showStatus(`💾 AUTO-SAVE #${this.autoSaveCounter} - Soubor automaticky uložen (5 min)`, 'processing');
-                
-                // Return to original status after 3 seconds
-                setTimeout(() => {
-                    if (this.isRecording) {
-                        this.showStatus('🎤 KONTINUÁLNÍ ZÁZNAM AKTIVNÍ - Mluvte přirozeně...', 'recording');
-                    }
-                }, 3000);
             }
 
             stopTimer() {
@@ -751,4 +720,4 @@
         });
     </script>
 </body>
-</html>
+</html>s
