@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice Commander | Kontinuální hlasový zapisovač</title>
+    <title>Voice Commander Hybrid | Audio + Text Recording</title>
     <style>
         * {
             margin: 0;
@@ -20,7 +20,7 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             background: #2a2a2a;
             border-radius: 12px;
@@ -47,10 +47,35 @@
             font-size: 1.1em;
         }
 
+        .recording-modes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .mode-panel {
+            background: #333;
+            border: 2px solid #555;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .mode-panel h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .mode-panel.active {
+            border-color: #00d4ff;
+            background: #1a2a3a;
+        }
+
         .controls {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 15px;
             margin-bottom: 30px;
             flex-wrap: wrap;
         }
@@ -59,13 +84,18 @@
             background: #333;
             color: #fff;
             border: 2px solid #555;
-            padding: 15px 30px;
-            font-size: 1.1em;
+            padding: 12px 25px;
+            font-size: 1em;
             border-radius: 8px;
             cursor: pointer;
-            min-width: 140px;
+            min-width: 130px;
             font-weight: 500;
-            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
         }
 
         .btn.primary {
@@ -86,23 +116,28 @@
             color: #000;
         }
 
+        .btn.warning {
+            background: #ffaa00;
+            border-color: #ffaa00;
+            color: #000;
+        }
+
         .btn:disabled {
             background: #555;
             border-color: #666;
             color: #999;
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
         .btn.recording {
-            background: #ff4444;
-            border-color: #ff6666;
-            color: #fff;
             animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); }
         }
 
         .status {
@@ -112,6 +147,7 @@
             border-radius: 8px;
             font-size: 1.1em;
             font-weight: 500;
+            transition: all 0.3s ease;
         }
 
         .status.ready {
@@ -124,6 +160,7 @@
             background: #4a1a1a;
             color: #ff4444;
             border: 2px solid #ff4444;
+            animation: statusPulse 3s infinite;
         }
 
         .status.processing {
@@ -132,95 +169,90 @@
             border: 2px solid #00d4ff;
         }
 
-        .live-preview {
+        @keyframes statusPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .dual-view {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
             background: #1a1a1a;
-            border: 2px solid #555;
+            border: 2px solid #404040;
             border-radius: 8px;
+            padding: 20px;
+            transition: border-color 0.3s ease;
+        }
+
+        .panel:hover {
+            border-color: #00d4ff;
+        }
+
+        .panel h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .live-preview {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 6px;
             padding: 15px;
-            margin-bottom: 20px;
-            min-height: 60px;
+            min-height: 80px;
             font-size: 1.1em;
             color: #00d4ff;
             font-style: italic;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
         }
 
         .live-preview.active {
             border-color: #00d4ff;
             background: #0a1a1a;
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
         }
 
         .text-area {
             width: 100%;
-            min-height: 400px;
-            background: #1a1a1a;
-            border: 2px solid #404040;
-            border-radius: 8px;
-            padding: 20px;
-            font-size: 1.1em;
+            min-height: 300px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 15px;
+            font-size: 1em;
             line-height: 1.6;
             color: #e0e0e0;
             resize: vertical;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: border-color 0.3s ease;
         }
 
         .text-area:focus {
             outline: none;
             border-color: #00d4ff;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
         }
 
-        .info-panel {
-            margin-top: 30px;
-            background: #1a1a1a;
-            border: 2px solid #404040;
-            border-radius: 8px;
-            padding: 20px;
-        }
-
-        .info-panel h3 {
-            color: #00d4ff;
+        .audio-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
             margin-bottom: 15px;
-            font-size: 1.3em;
+            flex-wrap: wrap;
         }
 
-        .info-list {
-            list-style: none;
-        }
-
-        .info-list li {
-            padding: 8px 0;
-            border-bottom: 1px solid #333;
-            color: #b0b0b0;
-        }
-
-        .info-list li:last-child {
-            border-bottom: none;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .stat-box {
-            background: #333;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            border: 2px solid #555;
-        }
-
-        .stat-number {
-            font-size: 2em;
-            font-weight: bold;
-            color: #00d4ff;
-            display: block;
-        }
-
-        .stat-label {
-            color: #b0b0b0;
-            margin-top: 5px;
+        .audio-player {
+            width: 100%;
+            margin: 10px 0;
+            border-radius: 6px;
         }
 
         .volume-indicator {
@@ -230,6 +262,7 @@
             border-radius: 10px;
             margin: 10px 0;
             overflow: hidden;
+            position: relative;
         }
 
         .volume-bar {
@@ -237,11 +270,91 @@
             background: linear-gradient(90deg, #44ff44, #ffff44, #ff4444);
             width: 0%;
             transition: width 0.1s ease;
+            border-radius: 10px;
+        }
+
+        .volume-text {
+            position: absolute;
+            top: 50%;
+            left: 10px;
+            transform: translateY(-50%);
+            color: #000;
+            font-weight: bold;
+            font-size: 0.8em;
+            z-index: 10;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-box {
+            background: #333;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #555;
+            transition: all 0.3s ease;
+        }
+
+        .stat-box:hover {
+            border-color: #00d4ff;
+            transform: translateY(-2px);
+        }
+
+        .stat-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #00d4ff;
+            display: block;
+        }
+
+        .stat-label {
+            color: #b0b0b0;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+
+        .waveform {
+            width: 100%;
+            height: 80px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            margin: 10px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .wave-bar {
+            position: absolute;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to top, #00d4ff, #44ff44);
+            transition: height 0.1s ease;
+            opacity: 0.8;
+        }
+
+        .error-message {
+            background: #4a1a1a;
+            color: #ff6666;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ff4444;
+            margin: 10px 0;
+            display: none;
         }
 
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
+            }
+            
+            .dual-view {
+                grid-template-columns: 1fr;
             }
             
             .controls {
@@ -251,7 +364,11 @@
             
             .btn {
                 width: 100%;
-                max-width: 300px;
+                max-width: 250px;
+            }
+            
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
     </style>
@@ -259,42 +376,68 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎤 VOICE COMMANDER</h1>
-            <p>Kontinuální hlasový zapisovač - Admirál Claude.AI systém</p>
+            <h1>🎤 VOICE COMMANDER HYBRID</h1>
+            <p>Současný záznam textu + audio souboru - Admirál Claude.AI systém</p>
+        </div>
+
+        <div id="errorMessage" class="error-message">
+            <strong>⚠️ Chyba systému:</strong> <span id="errorText"></span>
+        </div>
+
+        <div class="recording-modes">
+            <div class="mode-panel active">
+                <h3>🎯 HYBRID REŽIM</h3>
+                <p><strong>Současně:</strong> Live přepis textu + nahrávání audio souboru</p>
+                <p><strong>Výhoda:</strong> Záloha pro kontrolu a opravy</p>
+            </div>
+            <div class="mode-panel">
+                <h3>📊 DUAL STATISTIKY</h3>
+                <p><strong>Sledování:</strong> Kvalita přepisu vs. kvalita audia</p>
+                <p><strong>Kontrola:</strong> Volume, chunks, audio délka</p>
+            </div>
         </div>
 
         <div class="controls">
-            <button id="startBtn" class="btn primary">▶️ SPUSTIT KONTINUÁLNÍ ZÁZNAM</button>
+            <button id="startBtn" class="btn primary">▶️ SPUSTIT HYBRID ZÁZNAM</button>
             <button id="stopBtn" class="btn danger" disabled>⏹️ ZASTAVIT ZÁZNAM</button>
-            <button id="clearBtn" class="btn">🗑️ VYMAZAT TEXT</button>
-            <button id="saveBtn" class="btn success">💾 ULOŽIT SOUBOR</button>
+            <button id="playBtn" class="btn warning" disabled>🔊 PŘEHRÁT AUDIO</button>
+            <button id="clearBtn" class="btn">🗑️ VYMAZAT VŠE</button>
+            <button id="saveTextBtn" class="btn success">💾 ULOŽIT TEXT</button>
+            <button id="saveAudioBtn" class="btn success" disabled>🎵 ULOŽIT AUDIO</button>
         </div>
 
         <div id="status" class="status ready">
-            ✅ SYSTÉM PŘIPRAVEN - Klikněte na "SPUSTIT KONTINUÁLNÍ ZÁZNAM"
+            ✅ HYBRID SYSTÉM PŘIPRAVEN - Spustí se live přepis + audio nahrávání
         </div>
 
         <div class="volume-indicator">
             <div id="volumeBar" class="volume-bar"></div>
+            <div class="volume-text">🎚️ Audio Level</div>
         </div>
 
-        <div id="livePreview" class="live-preview">
-            Zde se zobrazí live náhled toho, co právě říkáte...
-        </div>
+        <div class="dual-view">
+            <div class="panel">
+                <h3>📝 TEXT ZÁZNAM</h3>
+                <div id="livePreview" class="live-preview">
+                    Live náhled mluveného slova se zobrazí zde...
+                </div>
+                <textarea id="textArea" class="text-area" 
+                          placeholder="Zde se zobrazuje live přepis vašeho hlasu...&#10;&#10;Současně se nahrává audio soubor pro kontrolu.&#10;&#10;Pokud přepis nebude přesný, můžete přehrát audio a opravit text ručně."></textarea>
+            </div>
 
-        <textarea id="textArea" class="text-area" 
-                  placeholder="Zde se bude zobrazovat kontinuálně přepsaný text z vašeho hlasu...&#10;&#10;Nový systém funguje skutečně nepřetržitě - žádné 5sekundové pauzy!&#10;&#10;Mluvte přirozeně a text se bude psát v reálném čase."></textarea>
-
-        <div class="info-panel">
-            <h3>🚀 POKROČILÉ FUNKCE</h3>
-            <ul class="info-list">
-                <li><strong>Kontinuální záznam:</strong> Žádné automatické pauzy nebo restarty</li>
-                <li><strong>Optimalizovaná přesnost:</strong> Vyšší kvalita zvuku a filtrace šumu</li>
-                <li><strong>Live preview:</strong> Vidíte text ještě před jeho zápisem</li>
-                <li><strong>Hlasitost mikrofonu:</strong> Vizuální indikátor úrovně zvuku</li>
-                <li><strong>Chunk processing:</strong> Zpracování po malých částech pro plynulost</li>
-                <li><strong>Manuální ukládání:</strong> Úplná kontrola nad exportem souborů</li>
-            </ul>
+            <div class="panel">
+                <h3>🎵 AUDIO ZÁZNAM</h3>
+                <div class="audio-controls">
+                    <span>Kvalita: 48kHz / 16bit</span>
+                    <span id="audioSize">Velikost: 0 MB</span>
+                </div>
+                <audio id="audioPlayer" class="audio-player" controls disabled>
+                    Váš prohlížeč nepodporuje audio přehrávač.
+                </audio>
+                <div id="waveform" class="waveform">
+                    <div class="wave-visualization">Audio vizualizace...</div>
+                </div>
+            </div>
         </div>
 
         <div class="stats">
@@ -312,54 +455,88 @@
             </div>
             <div class="stat-box">
                 <span id="chunksProcessed" class="stat-number">0</span>
-                <div class="stat-label">Zpracované chunky</div>
+                <div class="stat-label">Text chunky</div>
+            </div>
+            <div class="stat-box">
+                <span id="audioQuality" class="stat-number">0%</span>
+                <div class="stat-label">Audio kvalita</div>
             </div>
         </div>
     </div>
 
     <script>
-        class ContinuousVoiceRecorder {
+        class HybridVoiceRecorder {
             constructor() {
                 this.isRecording = false;
                 this.recognition = null;
+                this.mediaRecorder = null;
                 this.mediaStream = null;
                 this.audioContext = null;
                 this.analyser = null;
+                this.audioChunks = [];
                 this.startTime = 0;
                 this.timerInterval = null;
-                this.autoSaveInterval = null;
-                this.autoSaveCounter = 0;
-                this.chunksCount = 0; // Counter for processed chunks
-                this.lastResult = '';
-                this.finalTranscript = '';
+                this.chunksCount = 0;
+                this.audioBlob = null;
+                this.waveformBars = [];
+                this.currentInterimText = '';
+                this.finalText = '';
                 
                 this.initElements();
                 this.initAudio();
                 this.bindEvents();
                 this.checkBrowserSupport();
+                this.createWaveform();
+                
+                console.log('🚀 Voice Commander Hybrid initialized - Admirál Claude.AI systém online!');
             }
 
             initElements() {
                 this.startBtn = document.getElementById('startBtn');
                 this.stopBtn = document.getElementById('stopBtn');
+                this.playBtn = document.getElementById('playBtn');
                 this.clearBtn = document.getElementById('clearBtn');
-                this.saveBtn = document.getElementById('saveBtn');
+                this.saveTextBtn = document.getElementById('saveTextBtn');
+                this.saveAudioBtn = document.getElementById('saveAudioBtn');
                 this.status = document.getElementById('status');
                 this.textArea = document.getElementById('textArea');
                 this.livePreview = document.getElementById('livePreview');
                 this.volumeBar = document.getElementById('volumeBar');
+                this.audioPlayer = document.getElementById('audioPlayer');
+                this.audioSize = document.getElementById('audioSize');
+                this.waveform = document.getElementById('waveform');
+                this.errorMessage = document.getElementById('errorMessage');
+                this.errorText = document.getElementById('errorText');
+                
+                // Stats elements
                 this.wordCount = document.getElementById('wordCount');
                 this.charCount = document.getElementById('charCount');
                 this.recordingTime = document.getElementById('recordingTime');
                 this.chunksProcessed = document.getElementById('chunksProcessed');
+                this.audioQuality = document.getElementById('audioQuality');
             }
 
             async initAudio() {
                 try {
-                    // Initialize audio context for volume monitoring
                     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    console.log('✅ Audio context initialized');
                 } catch (error) {
-                    console.warn('Audio context not available:', error);
+                    console.warn('⚠️ Audio context not available:', error);
+                    this.showError('Audio kontext není dostupný');
+                }
+            }
+
+            createWaveform() {
+                const waveformContainer = this.waveform;
+                waveformContainer.innerHTML = '';
+                
+                for (let i = 0; i < 50; i++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'wave-bar';
+                    bar.style.left = `${i * 2}%`;
+                    bar.style.height = '2px';
+                    waveformContainer.appendChild(bar);
+                    this.waveformBars.push(bar);
                 }
             }
 
@@ -367,8 +544,8 @@
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 
                 if (!SpeechRecognition) {
-                    this.showStatus('❌ CHYBA - Váš prohlížeč nepodporuje rozpoznávání řeči!', 'recording');
-                    this.startBtn.disabled = true;
+                    console.warn('⚠️ Speech recognition not available');
+                    this.showError('Rozpoznávání řeči není podporováno v tomto prohlížeči');
                     return false;
                 }
 
@@ -376,16 +553,11 @@
                 this.recognition.continuous = true;
                 this.recognition.interimResults = true;
                 this.recognition.lang = 'cs-CZ';
-                this.recognition.maxAlternatives = 3; // More alternatives for better accuracy
-                
-                // Enhanced settings for better speech recognition
-                if ('webkitSpeechRecognition' in window) {
-                    this.recognition.serviceURI = 'wss://www.google.com/speech-api/v2/recognize';
-                }
+                this.recognition.maxAlternatives = 3;
 
                 this.recognition.onstart = () => {
                     console.log('🎤 Speech recognition started');
-                    this.showStatus('🎤 KONTINUÁLNÍ ZÁZNAM AKTIVNÍ - Mluvte přirozeně...', 'recording');
+                    this.showStatus('🎤 ROZPOZNÁVÁNÍ ŘEČI AKTIVNÍ', 'recording');
                 };
 
                 this.recognition.onresult = (event) => {
@@ -393,33 +565,101 @@
                 };
 
                 this.recognition.onerror = (event) => {
-                    console.error('Speech recognition error:', event.error);
-                    this.handleSpeechError(event);
+                    console.warn('⚠️ Speech recognition error:', event.error);
+                    if (event.error === 'not-allowed') {
+                        this.showError('Přístup k mikrofonu byl zamítnut');
+                    } else if (event.error === 'no-speech') {
+                        console.log('ℹ️ No speech detected, continuing...');
+                    } else if (event.error !== 'aborted') {
+                        this.showError(`Chyba rozpoznávání řeči: ${event.error}`);
+                    }
                 };
 
                 this.recognition.onend = () => {
-                    console.log('🔄 Speech recognition ended, immediate restart...');
-                    if (this.isRecording) {
-                        // Immediate restart with minimal delay for continuous flow
-                        try {
-                            this.recognition.start();
-                        } catch (error) {
-                            console.warn('Immediate restart failed, trying with micro delay:', error);
-                            setTimeout(() => {
-                                if (this.isRecording && this.recognition) {
-                                    try {
-                                        this.recognition.start();
-                                    } catch (delayedError) {
-                                        console.error('Failed to restart recognition:', delayedError);
-                                        this.handleRestartError();
-                                    }
+                    console.log('🏁 Speech recognition ended');
+                    if (this.isRecording && this.recognition) {
+                        setTimeout(() => {
+                            try {
+                                if (this.isRecording) {
+                                    this.recognition.start();
                                 }
-                            }, 5); // Even shorter delay - 5ms
-                        }
+                            } catch (error) {
+                                console.warn('⚠️ Failed to restart recognition:', error);
+                                setTimeout(() => {
+                                    if (this.isRecording && this.recognition) {
+                                        try {
+                                            this.recognition.start();
+                                        } catch (e) {
+                                            console.error('❌ Recognition restart failed:', e);
+                                        }
+                                    }
+                                }, 1000);
+                            }
+                        }, 100);
                     }
                 };
 
                 return true;
+            }
+
+            async initMediaRecorder() {
+                if (!this.mediaStream) return false;
+
+                try {
+                    // Try different formats based on browser support
+                    let mimeType = '';
+                    const supportedTypes = [
+                        'audio/webm;codecs=opus',
+                        'audio/webm',
+                        'audio/mp4;codecs=mp4a.40.2',
+                        'audio/mp4',
+                        'audio/ogg;codecs=opus',
+                        'audio/wav'
+                    ];
+
+                    for (let type of supportedTypes) {
+                        if (MediaRecorder.isTypeSupported(type)) {
+                            mimeType = type;
+                            break;
+                        }
+                    }
+
+                    const options = {
+                        mimeType: mimeType,
+                        audioBitsPerSecond: 128000
+                    };
+
+                    this.mediaRecorder = new MediaRecorder(this.mediaStream, options);
+                    this.audioChunks = [];
+
+                    console.log(`✅ MediaRecorder initialized with ${mimeType}`);
+
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            this.audioChunks.push(event.data);
+                            this.updateAudioSize();
+                        }
+                    };
+
+                    this.mediaRecorder.onstop = () => {
+                        console.log('🏁 Media recording stopped');
+                        this.audioBlob = new Blob(this.audioChunks, { 
+                            type: this.mediaRecorder.mimeType 
+                        });
+                        this.setupAudioPlayback();
+                    };
+
+                    this.mediaRecorder.onerror = (event) => {
+                        console.error('❌ MediaRecorder error:', event.error);
+                        this.showError(`Chyba nahrávání: ${event.error}`);
+                    };
+
+                    return true;
+                } catch (error) {
+                    console.error('❌ MediaRecorder initialization failed:', error);
+                    this.showError('Inicializace nahrávání selhala');
+                    return false;
+                }
             }
 
             handleSpeechResult(event) {
@@ -427,61 +667,32 @@
                 let finalTranscript = '';
 
                 for (let i = event.resultIndex; i < event.results.length; i++) {
-                    const transcript = event.results[i][0].transcript;
+                    const result = event.results[i];
+                    const transcript = result[0].transcript;
+                    const confidence = result[0].confidence;
                     
-                    if (event.results[i].isFinal) {
-                        finalTranscript += transcript + ' ';
-                        this.chunksCount++;
-                        this.updateChunksCount();
+                    if (result.isFinal) {
+                        if (!confidence || confidence > 0.3) {
+                            finalTranscript += transcript + ' ';
+                            this.chunksCount++;
+                            this.updateChunksCount();
+                        }
                     } else {
                         interimTranscript += transcript;
                     }
                 }
 
-                // Update live preview with interim results
                 if (interimTranscript) {
+                    this.currentInterimText = interimTranscript;
                     this.updateLivePreview(interimTranscript);
                 }
 
-                // Add final results to text area
                 if (finalTranscript) {
+                    this.finalText += finalTranscript;
                     this.addToTextArea(finalTranscript);
                     this.updateStats();
-                    this.updateLivePreviewWithFinal(finalTranscript); // Show confirmed text
-                }
-            }
-
-            handleSpeechError(event) {
-                switch(event.error) {
-                    case 'not-allowed':
-                        this.showStatus('❌ MIKROFON ZAMÍTNUT - Povolte přístup k mikrofonu', 'recording');
-                        this.stopRecording();
-                        break;
-                    case 'network':
-                        this.showStatus('⚠️ SÍŤOVÁ CHYBA - Pokračuji v pokusu o připojení...', 'processing');
-                        break;
-                    case 'no-speech':
-                        // Don't stop for no-speech, just continue
-                        break;
-                    case 'aborted':
-                        if (this.isRecording) {
-                            this.showStatus('🔄 RESTARTOVÁNÍ SYSTÉMU...', 'processing');
-                        }
-                        break;
-                    default:
-                        console.warn(`Speech error: ${event.error}`);
-                }
-            }
-
-            handleRestartError() {
-                if (this.isRecording) {
-                    this.showStatus('⚠️ PROBLÉM S RESTARTEM - Zkouším znovu...', 'processing');
-                    setTimeout(() => {
-                        if (this.isRecording) {
-                            this.initSpeechRecognition();
-                            this.recognition.start();
-                        }
-                    }, 500);
+                    this.updateLivePreviewWithFinal(finalTranscript);
+                    this.currentInterimText = '';
                 }
             }
 
@@ -492,26 +703,37 @@
                     const source = this.audioContext.createMediaStreamSource(this.mediaStream);
                     this.analyser = this.audioContext.createAnalyser();
                     this.analyser.fftSize = 256;
+                    this.analyser.smoothingTimeConstant = 0.8;
                     
                     source.connect(this.analyser);
-                    
                     this.startVolumeMonitoring();
+                    this.startWaveformVisualization();
+                    
+                    console.log('✅ Volume monitoring setup complete');
                 } catch (error) {
-                    console.warn('Volume monitoring setup failed:', error);
+                    console.warn('⚠️ Volume monitoring setup failed:', error);
                 }
             }
 
             startVolumeMonitoring() {
-                const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+                const bufferLength = this.analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
                 
                 const updateVolume = () => {
-                    if (!this.isRecording) return;
+                    if (!this.isRecording || !this.analyser) return;
                     
                     this.analyser.getByteFrequencyData(dataArray);
-                    const volume = dataArray.reduce((a, b) => a + b) / dataArray.length;
-                    const normalizedVolume = Math.min(volume / 50, 1) * 100;
+                    
+                    // Calculate RMS volume
+                    let sum = 0;
+                    for (let i = 0; i < bufferLength; i++) {
+                        sum += dataArray[i] * dataArray[i];
+                    }
+                    const rms = Math.sqrt(sum / bufferLength);
+                    const normalizedVolume = Math.min((rms / 50) * 100, 100);
                     
                     this.volumeBar.style.width = `${normalizedVolume}%`;
+                    this.audioQuality.textContent = `${Math.round(normalizedVolume)}%`;
                     
                     requestAnimationFrame(updateVolume);
                 };
@@ -519,82 +741,188 @@
                 updateVolume();
             }
 
+            startWaveformVisualization() {
+                const bufferLength = this.analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                
+                const updateWaveform = () => {
+                    if (!this.isRecording || !this.analyser) return;
+                    
+                    this.analyser.getByteFrequencyData(dataArray);
+                    
+                    const step = Math.floor(bufferLength / this.waveformBars.length);
+                    
+                    for (let i = 0; i < this.waveformBars.length; i++) {
+                        let sum = 0;
+                        for (let j = 0; j < step; j++) {
+                            sum += dataArray[i * step + j] || 0;
+                        }
+                        const average = sum / step;
+                        const height = Math.max(2, (average / 255) * 80);
+                        this.waveformBars[i].style.height = `${height}px`;
+                    }
+                    
+                    requestAnimationFrame(updateWaveform);
+                };
+                
+                updateWaveform();
+            }
+
             updateLivePreview(text) {
                 this.livePreview.textContent = `💬 ŘÍKÁTE: "${text.trim()}"`;
                 this.livePreview.classList.add('active');
-                this.livePreview.style.color = '#00d4ff'; // Blue for interim text
-            }
-
-            clearLivePreview() {
-                // Don't clear immediately, keep showing the last result
-                setTimeout(() => {
-                    if (!this.isRecording) {
-                        this.livePreview.textContent = 'Zde se zobrazí live náhled toho, co právě říkáte...';
-                        this.livePreview.classList.remove('active');
-                    }
-                }, 3000); // Extended time to see the result
+                this.livePreview.style.color = '#00d4ff';
             }
 
             updateLivePreviewWithFinal(text) {
                 this.livePreview.textContent = `✅ ZAPSÁNO: "${text.trim()}"`;
-                this.livePreview.classList.add('active');
-                this.livePreview.style.color = '#44ff44'; // Green for confirmed text
+                this.livePreview.style.color = '#44ff44';
                 
-                // Reset color after showing the result
                 setTimeout(() => {
-                    this.livePreview.style.color = '#00d4ff';
+                    if (!this.currentInterimText) {
+                        this.livePreview.style.color = '#00d4ff';
+                        this.livePreview.textContent = 'Live náhled mluveného slova se zobrazí zde...';
+                        this.livePreview.classList.remove('active');
+                    }
                 }, 2000);
             }
 
             addToTextArea(text) {
-                this.textArea.value += text;
-                // Auto scroll to bottom
+                const currentValue = this.textArea.value;
+                const newValue = currentValue + text;
+                this.textArea.value = newValue;
                 this.textArea.scrollTop = this.textArea.scrollHeight;
+            }
+
+            setupAudioPlayback() {
+                if (this.audioBlob) {
+                    const audioURL = URL.createObjectURL(this.audioBlob);
+                    this.audioPlayer.src = audioURL;
+                    this.audioPlayer.disabled = false;
+                    this.playBtn.disabled = false;
+                    this.saveAudioBtn.disabled = false;
+                    
+                    console.log('✅ Audio playback setup complete');
+                }
+            }
+
+            updateAudioSize() {
+                const totalSize = this.audioChunks.reduce((size, chunk) => size + chunk.size, 0);
+                const sizeInMB = (totalSize / (1024 * 1024)).toFixed(2);
+                this.audioSize.textContent = `Velikost: ${sizeInMB} MB`;
             }
 
             bindEvents() {
                 this.startBtn.addEventListener('click', () => this.startRecording());
                 this.stopBtn.addEventListener('click', () => this.stopRecording());
-                this.clearBtn.addEventListener('click', () => this.clearText());
-                this.saveBtn.addEventListener('click', () => this.saveText());
+                this.playBtn.addEventListener('click', () => this.playAudio());
+                this.clearBtn.addEventListener('click', () => this.clearAll());
+                this.saveTextBtn.addEventListener('click', () => this.saveText());
+                this.saveAudioBtn.addEventListener('click', () => this.saveAudio());
                 this.textArea.addEventListener('input', () => this.updateStats());
+                
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        switch(e.key) {
+                            case 'r':
+                                e.preventDefault();
+                                if (!this.isRecording && !this.startBtn.disabled) {
+                                    this.startRecording();
+                                } else if (this.isRecording) {
+                                    this.stopRecording();
+                                }
+                                break;
+                            case 's':
+                                e.preventDefault();
+                                this.saveText();
+                                break;
+                        }
+                    }
+                });
             }
 
             checkBrowserSupport() {
+                const errors = [];
+                
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    this.showStatus('❌ CHYBA - Váš prohlížeč nepodporuje přístup k mikrofonu!', 'recording');
+                    errors.push('Přístup k mikrofonu není podporován');
+                }
+                
+                if (!window.MediaRecorder) {
+                    errors.push('Nahrávání médií není podporováno');
+                }
+                
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                    errors.push('Rozpoznávání řeči není podporováno');
+                }
+                
+                if (errors.length > 0) {
+                    this.showError(errors.join(', '));
                     this.startBtn.disabled = true;
                     return false;
                 }
+                
+                console.log('✅ Browser support check passed');
                 return true;
+            }
+
+            showError(message) {
+                this.errorText.textContent = message;
+                this.errorMessage.style.display = 'block';
+                
+                setTimeout(() => {
+                    this.errorMessage.style.display = 'none';
+                }, 5000);
             }
 
             async startRecording() {
                 if (!this.checkBrowserSupport()) return;
 
                 try {
-                    // Get microphone access with optimal settings
+                    this.showStatus('🔄 INICIALIZACE SYSTÉMU...', 'processing');
+                    
+                    // Get high-quality microphone access
                     this.mediaStream = await navigator.mediaDevices.getUserMedia({ 
                         audio: {
                             echoCancellation: true,
                             noiseSuppression: true,
                             autoGainControl: true,
-                            sampleRate: 44100, // Higher sample rate for better quality
-                            channelCount: 1, // Mono for speech recognition
-                            latency: 0.01 // Low latency for real-time processing
+                            sampleRate: 48000,
+                            channelCount: 1,
+                            sampleSize: 16
                         } 
                     });
                     
+                    console.log('✅ Microphone access granted');
+                    
+                    // Resume audio context if suspended
+                    if (this.audioContext && this.audioContext.state === 'suspended') {
+                        await this.audioContext.resume();
+                    }
+                    
                     // Initialize speech recognition
                     if (!this.initSpeechRecognition()) {
-                        return;
+                        throw new Error('Speech recognition initialization failed');
                     }
-
-                    // Setup volume monitoring
+                    
+                    // Initialize media recorder
+                    if (!await this.initMediaRecorder()) {
+                        throw new Error('Media recorder initialization failed');
+                    }
+                    
+                    // Setup monitoring
                     await this.setupVolumeMonitoring();
                     
-                    // Start recognition
-                    this.recognition.start();
+                    // Start recording
+                    if (this.recognition) {
+                        this.recognition.start();
+                    }
+                    
+                    if (this.mediaRecorder && this.mediaRecorder.state === 'inactive') {
+                        this.mediaRecorder.start(1000); // Collect data every second
+                    }
                     
                     // Update UI
                     this.isRecording = true;
@@ -602,18 +930,24 @@
                     this.startBtn.classList.add('recording');
                     this.stopBtn.disabled = false;
                     this.chunksCount = 0;
-                    this.autoSaveCounter = 0;
+                    this.finalText = '';
+                    this.currentInterimText = '';
                     
                     this.startTimer();
-                    this.showStatus('🚀 KONTINUÁLNÍ ZÁZNAM SPUŠTĚN - Systém naslouchá...', 'recording');
+                    this.showStatus('🚀 HYBRID ZÁZNAM AKTIVNÍ - Text + Audio současně', 'recording');
+                    
+                    console.log('🚀 Recording started successfully!');
                     
                 } catch (error) {
-                    console.error('Start recording error:', error);
-                    this.showStatus('❌ CHYBA - Nelze získat přístup k mikrofonu!', 'recording');
+                    console.error('❌ Start recording error:', error);
+                    this.showError(`Nelze spustit nahrávání: ${error.message}`);
+                    this.showStatus('❌ CHYBA SYSTÉMU', 'ready');
+                    this.cleanup();
                 }
             }
 
             stopRecording() {
+                console.log('🛑 Stopping recording...');
                 this.isRecording = false;
                 
                 // Stop speech recognition
@@ -622,14 +956,24 @@
                     this.recognition = null;
                 }
                 
+                // Stop media recorder
+                if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+                    this.mediaRecorder.stop();
+                }
+                
                 // Stop media stream
                 if (this.mediaStream) {
-                    this.mediaStream.getTracks().forEach(track => track.stop());
+                    this.mediaStream.getTracks().forEach(track => {
+                        track.stop();
+                        console.log('🔇 Audio track stopped');
+                    });
                     this.mediaStream = null;
                 }
                 
-                // Reset volume bar
+                // Reset visuals
                 this.volumeBar.style.width = '0%';
+                this.audioQuality.textContent = '0%';
+                this.waveformBars.forEach(bar => bar.style.height = '2px');
                 
                 // Update UI
                 this.startBtn.disabled = false;
@@ -637,39 +981,174 @@
                 this.stopBtn.disabled = true;
                 
                 this.stopTimer();
-                this.showStatus('✅ KONTINUÁLNÍ ZÁZNAM UKONČEN - Systém připraven', 'ready');
-                this.clearLivePreview();
+                this.showStatus('✅ HYBRID ZÁZNAM UKONČEN - Text i audio připraveny', 'ready');
+                
+                // Update final preview
+                if (this.currentInterimText) {
+                    this.livePreview.textContent = '✅ ZÁZNAM DOKONČEN - Připraveno k přehrání a úpravám';
+                    this.livePreview.style.color = '#44ff44';
+                }
+                
+                console.log('✅ Recording stopped successfully');
             }
 
-            clearText() {
+            cleanup() {
+                this.isRecording = false;
+                this.startBtn.disabled = false;
+                this.startBtn.classList.remove('recording');
+                this.stopBtn.disabled = true;
+                
+                if (this.mediaStream) {
+                    this.mediaStream.getTracks().forEach(track => track.stop());
+                    this.mediaStream = null;
+                }
+                
+                this.volumeBar.style.width = '0%';
+                this.audioQuality.textContent = '0%';
+                this.stopTimer();
+            }
+
+            playAudio() {
+                if (!this.audioPlayer.src) {
+                    this.showError('Žádné audio k přehrání');
+                    return;
+                }
+                
+                if (this.audioPlayer.paused) {
+                    this.audioPlayer.play().then(() => {
+                        this.playBtn.textContent = '⏸️ POZASTAVIT';
+                        console.log('▶️ Audio playback started');
+                    }).catch(error => {
+                        console.error('❌ Audio playback error:', error);
+                        this.showError('Chyba při přehrávání audio');
+                    });
+                } else {
+                    this.audioPlayer.pause();
+                    this.playBtn.textContent = '🔊 PŘEHRÁT AUDIO';
+                    console.log('⏸️ Audio playback paused');
+                }
+                
+                this.audioPlayer.onended = () => {
+                    this.playBtn.textContent = '🔊 PŘEHRÁT AUDIO';
+                    console.log('🏁 Audio playback ended');
+                };
+            }
+
+            clearAll() {
+                if (this.isRecording) {
+                    this.stopRecording();
+                }
+                
                 this.textArea.value = '';
                 this.chunksCount = 0;
+                this.audioChunks = [];
+                this.audioBlob = null;
+                this.finalText = '';
+                this.currentInterimText = '';
+                
+                // Reset audio player
+                if (this.audioPlayer.src) {
+                    URL.revokeObjectURL(this.audioPlayer.src);
+                }
+                this.audioPlayer.src = '';
+                this.audioPlayer.disabled = true;
+                this.playBtn.disabled = true;
+                this.saveAudioBtn.disabled = true;
+                this.audioSize.textContent = 'Velikost: 0 MB';
+                
+                // Reset live preview
+                this.livePreview.textContent = 'Live náhled mluveného slova se zobrazí zde...';
+                this.livePreview.classList.remove('active');
+                this.livePreview.style.color = '#00d4ff';
+                
+                // Reset waveform
+                this.waveformBars.forEach(bar => bar.style.height = '2px');
+                
                 this.updateStats();
                 this.updateChunksCount();
-                this.showStatus('🗑️ TEXT VYMAZÁN - Systém připraven', 'ready');
+                this.showStatus('🗑️ VŠE VYMAZÁNO - Systém připraven', 'ready');
+                
+                console.log('🗑️ All data cleared');
             }
 
             saveText() {
-                const text = this.textArea.value;
-                if (!text.trim()) {
-                    alert('❌ Žádný text k uložení!');
+                const text = this.textArea.value.trim();
+                if (!text) {
+                    this.showError('Žádný text k uložení!');
                     return;
                 }
 
-                const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `voice-commander-${new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-')}.txt`;
-                a.click();
-                URL.revokeObjectURL(url);
-                
-                this.showStatus('💾 SOUBOR ULOŽEN - Text byl úspěšně exportován', 'processing');
-                setTimeout(() => {
-                    if (!this.isRecording) {
+                try {
+                    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+                    const stats = `Text Statistics:
+Word Count: ${this.wordCount.textContent}
+Character Count: ${this.charCount.textContent}
+Chunks Processed: ${this.chunksProcessed.textContent}
+Recording Time: ${this.recordingTime.textContent}
+
+Content:
+${text}`;
+                    
+                    const blob = new Blob([stats], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `voice-text-${timestamp}.txt`;
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    this.showStatus('💾 TEXT ULOŽEN', 'processing');
+                    setTimeout(() => {
                         this.showStatus('✅ SYSTÉM PŘIPRAVEN', 'ready');
-                    }
-                }, 2000);
+                    }, 2000);
+                    
+                    console.log('💾 Text saved successfully');
+                } catch (error) {
+                    console.error('❌ Save text error:', error);
+                    this.showError('Chyba při ukládání textu');
+                }
+            }
+
+            saveAudio() {
+                if (!this.audioBlob) {
+                    this.showError('Žádné audio k uložení!');
+                    return;
+                }
+
+                try {
+                    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+                    const url = URL.createObjectURL(this.audioBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    
+                    // Determine file extension based on blob type
+                    const mimeType = this.audioBlob.type;
+                    let extension = 'audio';
+                    if (mimeType.includes('webm')) extension = 'webm';
+                    else if (mimeType.includes('mp4')) extension = 'mp4';
+                    else if (mimeType.includes('ogg')) extension = 'ogg';
+                    else if (mimeType.includes('wav')) extension = 'wav';
+                    
+                    a.download = `voice-audio-${timestamp}.${extension}`;
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    this.showStatus('🎵 AUDIO ULOŽENO', 'processing');
+                    setTimeout(() => {
+                        this.showStatus('✅ SYSTÉM PŘIPRAVEN', 'ready');
+                    }, 2000);
+                    
+                    console.log('🎵 Audio saved successfully');
+                } catch (error) {
+                    console.error('❌ Save audio error:', error);
+                    this.showError('Chyba při ukládání audio');
+                }
             }
 
             updateStats() {
@@ -701,11 +1180,6 @@
                     clearInterval(this.timerInterval);
                     this.timerInterval = null;
                 }
-                
-                if (this.autoSaveInterval) {
-                    clearInterval(this.autoSaveInterval);
-                    this.autoSaveInterval = null;
-                }
             }
 
             showStatus(message, type) {
@@ -714,10 +1188,34 @@
             }
         }
 
-        // Initialize the continuous voice recorder when page loads
+        // Initialize the Voice Commander when page loads
         document.addEventListener('DOMContentLoaded', () => {
-            new ContinuousVoiceRecorder();
+            console.log('🚀 Initializing Voice Commander Hybrid...');
+            window.voiceCommander = new HybridVoiceRecorder();
+            
+            // Show initial status
+            setTimeout(() => {
+                console.log('✅ Voice Commander Hybrid ready for action!');
+            }, 500);
+        });
+        
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && window.voiceCommander && window.voiceCommander.isRecording) {
+                console.log('⚠️ Page hidden during recording - continuing in background');
+            } else if (!document.hidden && window.voiceCommander && window.voiceCommander.isRecording) {
+                console.log('👁️ Page visible - recording continues');
+            }
+        });
+        
+        // Handle beforeunload
+        window.addEventListener('beforeunload', (e) => {
+            if (window.voiceCommander && window.voiceCommander.isRecording) {
+                e.preventDefault();
+                e.returnValue = 'Probíhá nahrávání. Opravdu chcete opustit stránku?';
+                return e.returnValue;
+            }
         });
     </script>
 </body>
-</html>s
+</html>
